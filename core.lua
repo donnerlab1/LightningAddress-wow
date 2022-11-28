@@ -137,7 +137,6 @@ function LightningAddress:OpenQrCode(msg)
 end
 
 LightningAddress:RegisterChatCommand("tip", "TipTarget")
-LightningAddress:RegisterChatCommand("tipraid", "TipRaidTarget")
 RAIDTARGET = ""
 
 function LightningAddress:TipTarget(msg)
@@ -145,19 +144,16 @@ function LightningAddress:TipTarget(msg)
     if target == nil then
         return
     end
-    LightningAddress:Print("Trying to tip: " .. target)
-    LightningAddress:SendCommMessage("lightningaddress", "request", "WHISPER", target)
+    if string.find(target, "-") ~= nil then
+        LightningAddress:Print("Trying to Raid tip: " .. target)
+        RAIDTARGET = target
+        LightningAddress:SendCommMessage("lightningaddress", "raidrequest@"..target, "RAID")
+    else 
+        LightningAddress:Print("Trying to tip: " .. target)
+        LightningAddress:SendCommMessage("lightningaddress", "request", "WHISPER", target)
+    end
 end
 
-function LightningAddress:TipRaidTarget(msg)
-    local target = getNameOrTarget(msg)
-    if target == nil then
-        return
-    end
-    LightningAddress:Print("Trying to tip: " .. target)
-    RAIDTARGET = target
-    LightningAddress:SendCommMessage("lightningaddress", "raidrequest@"..target, "RAID")
-end
 
 function getNameOrTarget(msg)
     if msg ~= nil and msg ~= "" then return msg end
@@ -175,19 +171,15 @@ end
 
 
 function LightningAddress:OnCommReceived(prefix, message, distribution, sender)
-    LightningAddress:Print("New message " .. prefix .. " " .. message .. " " .. distribution .. " " ..sender)
-
     if prefix ~= "lightningaddress" then return end
 
     if string.find(message, "raidrequest") ~= nil then
         local sender = string.sub(message, 13)
-        LightningAddress:Print("Sender: " ..sender) 
         RAIDSENDER = sender
         local address = LightningAddress:GetMyLightningAddress(nil)
         LightningAddress:SendCommMessage("lightningaddress", "raidresponse@"..lnprefix(address), "RAID")
         return
     elseif message == "request" then
-        LightningAddress:Print("Request received from " .. sender)
         local address = LightningAddress:GetMyLightningAddress(nil)
         if address == nil then 
             LightningAddress:Print("No lightning address set")
@@ -195,17 +187,17 @@ function LightningAddress:OnCommReceived(prefix, message, distribution, sender)
         end
         LightningAddress:SendCommMessage("lightningaddress", "response"..lnprefix(address), "WHISPER", sender)
     elseif string.find(message, "raidresponse") ~= nil then
-        if string.find(RAIDTARGET, sender) == nil then
-            LightningAddress:Print("Not from target")
+        if sender ~= RAIDTARGET then
             return 
         end
-        LightningAddress:Print("Response received from " .. sender .. " Address: " .. message)
+        RAIDTARGET = ""
         local address = string.sub(message, 14)
+        LightningAddress:Print("Response received from " .. sender .. " Address: " .. address)
         LightningAddress:OpenQrCode(address)
     elseif string.find(message, "response") ~= nil then
         local address = string.sub(message, 10)
-        LightningAddress:Print("Response received from " .. sender .. " Address: " .. message)
-        LightningAddress:OpenQrCode(message)
+        LightningAddress:Print("Response received from " .. sender .. " Address: " .. address)
+        LightningAddress:OpenQrCode(address)
     end
 end
 

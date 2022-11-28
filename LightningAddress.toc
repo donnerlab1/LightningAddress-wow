@@ -1,0 +1,10 @@
+## Interface: 100002
+## Title: LightningAddress
+## Author: baob
+## Version: 0.1
+## SavedVariables: LightningAddressDB
+
+embeds.xml
+
+qrcode.lua
+core.lua

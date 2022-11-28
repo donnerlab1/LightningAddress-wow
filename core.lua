@@ -139,6 +139,16 @@ end
 LightningAddress:RegisterChatCommand("tip", "TipTarget")
 
 function LightningAddress:TipTarget(msg)
+    local target = getNameOrTarget(msg)
+    if target == nil then
+        return
+    end
+    LightningAddress:Print("Tring to tip: " .. target)
+    LightningAddress:SendCommMessage("lightningaddress", "request", "WHISPER", target)
+end
+
+function getNameOrTarget(msg)
+    if msg ~= nil and msg ~= "" then return msg end
     local name, realm = UnitName("target")
     if name == nil then
         LightningAddress:Print("no target selected")
@@ -148,11 +158,11 @@ function LightningAddress:TipTarget(msg)
     if realm ~= nil then
         target = name .. "-" .. realm
     end
-    LightningAddress:Print("Tring to tip: " .. target)
-    LightningAddress:SendCommMessage("lightningaddress", "request", "WHISPER", target)
+    return target
 end
 
 function LightningAddress:OnCommReceived(prefix, message, distribution, sender)
+    LightningAddress:Print("New message " .. prefix .. " " .. message .. " " .. distribution .. " " ..sender)
     if prefix ~= "lightningaddress" then return end
     if message == "request" then 
         LightningAddress:Print("Request received from " .. sender)
